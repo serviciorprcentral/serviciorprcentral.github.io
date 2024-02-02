@@ -110,7 +110,14 @@
             var myModal = new bootstrap.Modal(document.getElementById('qrCodeModal'))
             myModal.show()
             if (!this.qrCodeGenerated) {
-              this.qrCode = new QRCode(document.getElementById("qrcode"), this.url);
+                this.qrCode = new QRCode(document.getElementById("qrcode"), {
+                  text: this.url,
+                  width: 64,
+                  height: 64,
+                  colorDark : "#000000",
+                  colorLight : "#ffffff",
+                  correctLevel : QRCode.CorrectLevel.H
+              });
               this.qrCodeGenerated = true
             }
             else {
