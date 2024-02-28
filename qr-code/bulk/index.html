@@ -9,6 +9,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script src="./../resources/qrcode.min.js"></script>
   <script src="./../resources/html2canvas.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </head>
 <body>
   <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
@@ -35,13 +37,41 @@
   <div class="container my-4">
     <h1 class="mb-4">Bulk QR-Codes Generator</h1>
     <div id="app">
-      <div class="row mb-3" v-for="(url, index) in urls" :key="index + 'ID'">
-        <div class="col-xs-12">
-          <div class="input-group">
-            <span class="input-group-text">URL</span>
-            <input class="form-control" v-model.trim="urls[index]" class="form-control" type="text" id="link" placeholder="https://rainbowsystem.com" :class="urlValidation(url) == true ? isDuplicate(index) ? 'is-invalid' : 'is-valid' : (urlValidation(url) == false) ? 'is-invalid' : ''" required>
-            <div class="invalid-feedback">
-              Not a correct URL or already in list.
+      <div class="card text-center mb-3">
+        <div class="card-header">
+          URLs
+        </div>
+        <div class="card-body">
+<!--           <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+              <ul class="pagination justify-content-center">
+                <li class="page-item disabled">
+                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                </li>
+                <li class="page-item" v-for="(url, index) in urls" :key="'tabKey-' + index">
+                  <a class="page-link" id="nav-profile-tab" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">{{ index + 1 }}</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#">Next</a>
+                </li>
+              </ul>
+            </div>
+          </nav> -->
+            <div class="nav nav-tabs nav-pills" id="nav-tab" role="tablist">
+              <button class="nav-link active bg-secondary text-white" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">Start</button>
+              <button id="nav-profile-tab" class="nav-link" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" v-for="(url, index) in urls" :key="'tabKey-' + index">{{ index + 1 }}</button>
+              <!-- <button id="nav-profile-tab" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" v-for="(url, index) in urls" :key="'tabKey-' + index" :class="urls[index].trim().length === 0 ? 'nav-link' : urlValidation(urls[index]) ? isDuplicate(index) ? 'nav-link bg-danger text-white' : 'nav-link bg-success text-white' : 'nav-link bg-danger' ">{{ index + 1 }}</button> -->
+            </div>
+          <div class="tab-content mt-3" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">Add info</div>
+            <div v-for="(url, index) in urls" :key="'tabKeyContent-' + index" class="tab-pane fade" :id="'urlTabContent-' + index" role="tabpanel" aria-labelledby="nav-contact-tab">
+              <div class="input-group">
+                <span class="input-group-text">URL</span>
+                <input class="form-control" v-model.trim="urls[index]" class="form-control" type="text" :id="'link-'+index" placeholder="https://rainbowsystem.com" :class="urlValidation(url) == true ? isDuplicate(index) ? 'is-invalid' : 'is-valid' : (urlValidation(url) == false) ? 'is-invalid' : ''" required>
+                <div class="invalid-feedback">
+                  Not a correct URL or already in list.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -63,11 +93,20 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              <div id="qrcode"></div>
               <div class="d-grid gap-2 col-6 mx-auto mt-3">
                 <button @click="download" class="btn btn-primary">
                   <i class="bi bi-download"></i> Download
                 </button>
+              </div>
+              <div class="d-grid gap-2 col-6 mx-auto mt-3">
+                <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                  <i class="bi bi-eye-fill"></i> View QR Codes
+                </button>
+              </div>
+              <div class="collapse" id="collapseExample">
+                <div class="card card-body">
+                  <div id="qrcode"></div>
+                </div>
               </div>
             </div>
             <div class="modal-footer">
@@ -107,8 +146,7 @@
     createApp({
       data() {
         return {
-          urls: Array(16).fill(''),
-          qrCode: null,
+          urls: Array(35).fill(''),
           qrCodeGenerated: false,
           areThereAnyDuplicates: false
         }
@@ -144,34 +182,44 @@
         },
         generate() {
           if (this.canCreateQrCodesSheet) {
-            var myModal = new bootstrap.Modal(document.getElementById('qrCodeModal'))
-            myModal.show()
-            if (!this.qrCodeGenerated) {
-              this.qrCode = new QRCode(document.getElementById("qrcode"), this.urls[0]);
-              this.qrCodeGenerated = true
-            }
-            else {
-              this.qrCode.clear()
-              this.qrCode.makeCode(this.urls[0])
-            }
+            //TODO clearQrCode
+            new bootstrap.Modal(document.getElementById('qrCodeModal')).show()
+            this.updateQrCode()
           }
         },
         download() {
-        var container = document.getElementById("qrcode");
-           html2canvas(container, { allowTaint: true }).then(function (canvas) {
-         
-           var link = document.createElement("a");
-           document.body.appendChild(link);
-           link.download = "qr-code.jpg";
-           link.href = canvas.toDataURL();
-           link.target = '_blank';
-           link.click();
-         }); 
+          var container = document.getElementById("qrcode");
+          var pdf = new jspdf.jsPDF();
+          let spaceCounter = 0;
+          let columnCounter = 0;
+          let rowSpacer = 0;
+          $('#qrcode').children('img').each(function (index) {
+            if (columnCounter == 5){
+                columnCounter = 0;
+                spaceCounter = 0;
+                rowSpacer += 41.5;
+            }
+            pdf.addImage($(this).attr('src'), 'png', 2 + spaceCounter, 3.75 + rowSpacer, 40, 40);
+            spaceCounter += 41.5;
+            columnCounter++;
+          })
+          pdf.save("qr-batch.pdf");
         },
         clear() {
-          this.urls = Array(16).fill('')
+          this.urls = Array(35).fill('')
           this.qrCodeGenerated = false
           this.areThereAnyDuplicates = false
+        },
+        updateQrCode() {
+          for (let i = 0; i < this.urls.length; i++)
+            new QRCode(document.getElementById("qrcode"), {
+              text: this.urls[i],
+              width: 150,
+              height: 150,
+              colorDark : "#000000",
+              colorLight : "#ffffff",
+              correctLevel : QRCode.CorrectLevel.H
+            });
         }
       } 
     }).mount('#app')
