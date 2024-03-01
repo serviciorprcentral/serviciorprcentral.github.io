@@ -42,28 +42,23 @@
           URLs
         </div>
         <div class="card-body">
-<!--           <nav>
             <div class="nav nav-tabs" id="nav-tab" role="tablist">
-              <ul class="pagination justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                </li>
-                <li class="page-item" v-for="(url, index) in urls" :key="'tabKey-' + index">
-                  <a class="page-link" id="nav-profile-tab" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">{{ index + 1 }}</a>
-                </li>
-                <li class="page-item">
-                  <a class="page-link" href="#">Next</a>
-                </li>
-              </ul>
-            </div>
-          </nav> -->
-            <div class="nav nav-tabs nav-pills" id="nav-tab" role="tablist">
-              <button class="nav-link active bg-secondary text-white" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">Start</button>
-              <button id="nav-profile-tab" class="nav-link" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" v-for="(url, index) in urls" :key="'tabKey-' + index">{{ index + 1 }}</button>
-              <!-- <button id="nav-profile-tab" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" v-for="(url, index) in urls" :key="'tabKey-' + index" :class="urls[index].trim().length === 0 ? 'nav-link' : urlValidation(urls[index]) ? isDuplicate(index) ? 'nav-link bg-danger text-white' : 'nav-link bg-success text-white' : 'nav-link bg-danger' ">{{ index + 1 }}</button> -->
-            </div>
+              <div  v-for="(url, index) in urls" :key="'tabKey-' + index">
+                <button class="nav-link" data-bs-toggle="tab" :data-bs-target="'#urlTabContent-' + index" type="button" role="tab">
+                  <span v-if="isDuplicate(index)">
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                  </span>
+                  <span v-else-if="urlValidation(url) == true">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                  </span>
+                  <span v-else-if="urlValidation(url) == false">
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                  </span>
+                  <span v-else>{{ index + 1 }}</span>
+                </button>
+              </div>
+          </div>
           <div class="tab-content mt-3" id="nav-tabContent">
-            <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">Add info</div>
             <div v-for="(url, index) in urls" :key="'tabKeyContent-' + index" class="tab-pane fade" :id="'urlTabContent-' + index" role="tabpanel" aria-labelledby="nav-contact-tab">
               <div class="input-group">
                 <span class="input-group-text">URL</span>
@@ -77,6 +72,9 @@
         </div>
       </div>
       <div class="d-grid gap-2 col-6 mx-auto">
+        <div class="progress" role="progressbar" :aria-valuenow="urlCompletion" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" :class="areThereAnyDuplicates ? 'bg-warning text-dark' : ''" :style="'width: '+ urlCompletion +'%'">{{ urlCompletion }} %</div>
+        </div>
         <button @click="generate" type="button" class="btn" :class="canCreateQrCodesSheet == true ? 'btn-success' : canCreateQrCodesSheet == false ? 'btn-danger' : 'btn-secondary'" :disabled="!canCreateQrCodesSheet || areThereAnyDuplicates">
           <template v-if="canCreateQrCodesSheet"><i class="bi bi-check-circle-fill" /> Generate</template>
           <template v-else-if="canCreateQrCodesSheet == false || areThereAnyDuplicates"><i class="bi bi-exclamation-triangle-fill" /> Invalid</template>
@@ -84,9 +82,8 @@
         </button>
         <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#clearModal">Clear</button>
       </div>
-
       <div class="modal fade" id="qrCodeModal" role="dialog">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
               <h3 class="modal-title">QR Codes Generated!</h3>
@@ -115,14 +112,14 @@
           </div>
         </div>
       </div>
-
-
       <div class="modal fade" id="clearModal" tabindex="-1" aria-labelledby="clearModal" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
-              <div class="row">
-                <h5>Are you sure you want to clear all the URLs?</h5>
+              <div class="row text-center">
+                <div class="col">
+                  <h5>Are you sure you want to clear all the URLs?</h5>
+                </div>
               </div>
               <div class="d-grid gap-2 col-6 mx-auto">
                 <button type="button" class="btn btn-success" @click="clear" data-bs-dismiss="modal">Yes</button>
@@ -146,8 +143,8 @@
     createApp({
       data() {
         return {
+          downloadModal: null,
           urls: Array(35).fill(''),
-          qrCodeGenerated: false,
           areThereAnyDuplicates: false
         }
       },
@@ -162,7 +159,17 @@
             else if(!this.urlValidation(this.urls[i]))
               return false
           return checkValidation
+        },
+        urlCompletion () {
+          var goodCount = 0
+          for(let i = 0; i < this.urls.length; i++)
+            if(this.urlValidation(this.urls[i]))
+              goodCount++
+          return ((goodCount / this.urls.length) * 100).toFixed(2)
         }
+      },
+      mounted () {
+        this.downloadModal = new bootstrap.Modal(document.getElementById('qrCodeModal'))
       },
       methods: {
         urlValidation(url) {
@@ -182,9 +189,9 @@
         },
         generate() {
           if (this.canCreateQrCodesSheet) {
-            //TODO clearQrCode
-            new bootstrap.Modal(document.getElementById('qrCodeModal')).show()
-            this.updateQrCode()
+            this.emptyQrCodeSection()
+            this.downloadModal.show()
+            this.paintQrCodesFromList()
           }
         },
         download() {
@@ -203,19 +210,25 @@
             spaceCounter += 41.5;
             columnCounter++;
           })
-          pdf.save("qr-batch.pdf");
+          pdf.save("qr-codes-batch.pdf");
+          this.downloadModal.hide()
+          this.emptyQrCodeSection()
         },
         clear() {
           this.urls = Array(35).fill('')
-          this.qrCodeGenerated = false
           this.areThereAnyDuplicates = false
+          this.emptyQrCodeSection()
         },
-        updateQrCode() {
+        emptyQrCodeSection () {
+          $('#qrcode').empty()
+        },
+        paintQrCodesFromList () {
+          this.emptyQrCodeSection()
           for (let i = 0; i < this.urls.length; i++)
             new QRCode(document.getElementById("qrcode"), {
               text: this.urls[i],
-              width: 150,
-              height: 150,
+              width: 400,
+              height: 400,
               colorDark : "#000000",
               colorLight : "#ffffff",
               correctLevel : QRCode.CorrectLevel.H
