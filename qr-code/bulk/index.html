@@ -204,12 +204,19 @@
             if (columnCounter == 5){
                 columnCounter = 0;
                 spaceCounter = 0;
-                rowSpacer += 41.5;
+                rowSpacer += 40;
             }
-            pdf.addImage($(this).attr('src'), 'png', 2 + spaceCounter, 3.75 + rowSpacer, 40, 40);
-            spaceCounter += 41.5;
+            pdf.addImage($(this).attr('src'), 'png', 5.5 + spaceCounter, 7 + rowSpacer, 38, 38);
+            spaceCounter += 40;
             columnCounter++;
           })
+
+          pdf.setFontSize(9.5);
+          for (let i = 0; i < 7; i++){
+            pdf.text('' + (i * 5 + 1), 1, 27 + (i * 41));
+            pdf.text('' + ((i + 1) * 5), 204.5, 27 + (i * 41));
+          }
+
           pdf.save("qr-codes-batch.pdf");
           this.downloadModal.hide()
           this.emptyQrCodeSection()
