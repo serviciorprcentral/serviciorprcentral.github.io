@@ -217,7 +217,6 @@
           }
         },
         download() {
-          var container = document.getElementById("qrcode");
           var pdf = new jspdf.jsPDF();
           let spaceCounter = 0;
           let columnCounter = 0;
@@ -235,8 +234,8 @@
 
           pdf.setFontSize(9.5);
           for (let i = 0; i < 7; i++){
-            pdf.text('' + (i * 5 + 1), 1, 27 + (i * 41));
-            pdf.text('' + ((i + 1) * 5), 204.5, 27 + (i * 41));
+            pdf.text('' + (i * 5 + .25), 1, 27 + (i * 41) - i);
+            pdf.text('' + ((i + 1) * 5), 205, 27 + (i * 41) - i);
           }
 
           pdf.save("qr-codes-batch.pdf");
